@@ -145,6 +145,10 @@ def delete_kb(kb_id: str) -> dict:
         provisioner.delete_kb(kb_id)
     except KeyError as ex:
         raise HTTPException(status_code=404, detail=str(ex)) from ex
+    except provisioner.ProvisionError as ex:
+        # 도커 데몬이 없으면 컨테이너/볼륨을 지울 수 없다. 카탈로그만 지우면
+        # 고아 컨테이너가 남으므로 실패시키되, 원인은 사용자에게 그대로 보여준다.
+        raise HTTPException(status_code=502, detail=str(ex)) from ex
     return {"ok": True}
 
 
