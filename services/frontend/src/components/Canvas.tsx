@@ -10,6 +10,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { typesCompatible, useStore } from "../store";
+import { useTheme } from "../theme";
 import { FlowNode } from "./FlowNode";
 
 const nodeTypes = { component: FlowNode };
@@ -23,6 +24,7 @@ export function Canvas() {
   const addNode = useStore((s) => s.addNode);
   const setSelectedNode = useStore((s) => s.setSelectedNode);
   const specMap = useStore((s) => s.specMap);
+  const themeMode = useTheme((s) => s.mode);
   const { screenToFlowPosition } = useReactFlow();
 
   const isValidConnection = useCallback(
@@ -66,7 +68,7 @@ export function Canvas() {
         onNodeClick={(_, node) => setSelectedNode(node.id)}
         onPaneClick={() => setSelectedNode(null)}
         fitView
-        colorMode="dark"
+        colorMode={themeMode}
         deleteKeyCode={["Delete", "Backspace"]}
       >
         <Background gap={20} />

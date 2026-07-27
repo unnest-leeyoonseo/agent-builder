@@ -379,6 +379,13 @@ React + Vite + TypeScript + `@xyflow/react` + zustand.
 - **채팅 패널**: ChatInput/ChatOutput이 있는 flow는 우측에 플레이그라운드 채팅.
 - **export**: 툴바에서 flow JSON 다운로드 / 업로드(import).
 - **자격증명**: 설정 화면에서 이름+값 등록 → LLM 노드 등에서 이름만 선택.
+- **디자인 토큰**: 색·반경·그림자는 `src/styles.css`의 CSS 변수에만 정의한다.
+  TS/TSX에 hex 금지 — 포트 타입 색은 `typeColor()`가 `var(--port-*)`를 반환하고,
+  노드 실행 상태는 인라인 style이 아니라 `.node-{state}` 클래스로 칠한다.
+  라이트/다크 양쪽을 지원하며(`prefers-color-scheme` + 툴바 토글의 `data-theme`),
+  본문 텍스트는 배경 대비 4.5:1(WCAG AA) 이상을 지킨다.
+- **아이콘**: 외부 아이콘 패키지를 쓰지 않는다 (원칙 1). `src/components/Icon.tsx`의
+  인라인 SVG 셋에 컴포넌트 스펙의 `icon` 이름을 키로 추가한다 (없으면 `box` 폴백).
 
 ---
 

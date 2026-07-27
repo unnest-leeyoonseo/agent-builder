@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { api, uploadDocument } from "../api";
 import { useStore } from "../store";
 import type { ComponentSpec } from "../types";
+import { Icon } from "./Icon";
 
 const CATEGORY_LABELS: Record<string, string> = {
   io: "입출력",
@@ -35,7 +36,8 @@ function DraggableComponent({ spec }: { spec: ComponentSpec }) {
         e.dataTransfer.effectAllowed = "move";
       }}
     >
-      <span>{spec.display_name}</span>
+      <Icon name={spec.icon} />
+      <span className="palette-name">{spec.display_name}</span>
       <span className="palette-type">{spec.type}</span>
     </div>
   );
@@ -201,8 +203,8 @@ export function Sidebar() {
           onKeyDown={(e) => e.key === "Enter" && createKb()}
           disabled={creating}
         />
-        <button onClick={createKb} disabled={creating}>
-          {creating ? "생성 중..." : "+"}
+        <button onClick={createKb} disabled={creating} title="KB 생성 (Neo4j 컨테이너 기동)">
+          {creating ? "생성 중..." : <Icon name="plus" />}
         </button>
       </div>
       {kbs.map((kb) => (
@@ -224,12 +226,13 @@ export function Sidebar() {
             <button
               className="kb-delete"
               title="KB 삭제"
+              aria-label={`KB ${kb.kb_id} 삭제`}
               onClick={(e) => {
                 e.stopPropagation();
                 deleteKb(kb.kb_id);
               }}
             >
-              ×
+              <Icon name="x" size={13} />
             </button>
           </div>
           <div className="kb-actions">
@@ -313,7 +316,7 @@ export function Sidebar() {
             </p>
             <div className="modal-actions">
               <button onClick={() => setPending(null)}>취소</button>
-              <button className="run-btn" onClick={startUpload}>
+              <button className="btn-primary" onClick={startUpload}>
                 적재 시작
               </button>
             </div>

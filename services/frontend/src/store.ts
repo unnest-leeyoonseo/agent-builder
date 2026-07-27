@@ -201,21 +201,24 @@ export const useStore = create<PlatformState>((set, get) => ({
   log: (line) => set((st) => ({ logLines: [...st.logLines.slice(-199), line] })),
 }));
 
-/** 포트 타입별 색 — 연결 가능 여부를 눈으로 판별하게 한다. */
-const TYPE_COLORS: Record<string, string> = {
-  RawFile: "#f59e0b",
-  NormalizedDocument: "#84cc16",
-  "list[Chunk]": "#22d3ee",
-  Chunk: "#22d3ee",
-  "list[RetrievalHit]": "#a78bfa",
-  RetrievalHit: "#a78bfa",
-  Message: "#60a5fa",
-  IngestReport: "#f472b6",
-  Any: "#9ca3af",
+/**
+ * 포트 타입별 색 — 연결 가능 여부를 눈으로 판별하게 한다.
+ * 실제 색값은 styles.css의 토큰에만 있다 (라이트/다크에서 각각 다른 값이 필요).
+ */
+const TYPE_VARS: Record<string, string> = {
+  RawFile: "--port-rawfile",
+  NormalizedDocument: "--port-document",
+  "list[Chunk]": "--port-chunk",
+  Chunk: "--port-chunk",
+  "list[RetrievalHit]": "--port-hit",
+  RetrievalHit: "--port-hit",
+  Message: "--port-message",
+  IngestReport: "--port-report",
+  Any: "--port-any",
 };
 
 export function typeColor(t: string): string {
-  return TYPE_COLORS[t] ?? "#9ca3af";
+  return `var(${TYPE_VARS[t] ?? "--port-any"})`;
 }
 
 export function typesCompatible(a: string, b: string): boolean {

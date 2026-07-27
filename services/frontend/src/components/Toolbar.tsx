@@ -1,8 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, runFlow } from "../api";
 import { useStore } from "../store";
+import { THEME_LABEL, useTheme, type ThemeMode } from "../theme";
 import type { FlowJson } from "../types";
 import { ComponentUploadModal } from "./ComponentUploadModal";
+import { Icon } from "./Icon";
 
 /** 저장 안 됐으면 저장하고 flowId를 반환. */
 export async function ensureSaved(): Promise<string> {
@@ -17,6 +19,12 @@ export async function ensureSaved(): Promise<string> {
   return created.id;
 }
 
+const THEME_ICON: Record<ThemeMode, string> = {
+  system: "monitor",
+  light: "sun",
+  dark: "moon",
+};
+
 export function Toolbar() {
   const flowName = useStore((s) => s.flowName);
   const setFlowName = useStore((s) => s.setFlowName);
@@ -27,10 +35,21 @@ export function Toolbar() {
   const applyEvent = useStore((s) => s.applyEvent);
   const loadFlow = useStore((s) => s.loadFlow);
   const log = useStore((s) => s.log);
+  const themeMode = useTheme((s) => s.mode);
+  const cycleTheme = useTheme((s) => s.cycleMode);
   const importRef = useRef<HTMLInputElement>(null);
   const [flowList, setFlowList] = useState<{ id: string; name: string }[]>([]);
   const [bundling, setBundling] = useState(false);
   const [showCompUpload, setShowCompUpload] = useState(false);
+  // 파일 메뉴: null=닫힘, "file"=1단, "open"=flow 목록으로 전환된 상태
+  const [menu, setMenu] = useState<null | "file" | "open">(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menu]);
 
   async function save() {
     try {
@@ -107,61 +126,147 @@ export function Toolbar() {
   }
 
   async function openFlowList() {
-    setFlowList(await api.flows());
+    setMenu("open");
+    try {
+      setFlowList(await api.flows());
+    } catch (ex) {
+      log(`flow 목록 조회 실패: ${(ex as Error).message}`);
+      setFlowList([]);
+    }
   }
 
   async function openFlow(id: string) {
     const data = await api.getFlow(id);
     loadFlow(data.id, data.flow);
-    setFlowList([]);
+    setMenu(null);
   }
 
   function newFlow() {
     loadFlow(null, { version: "1", name: "새 에이전트", nodes: [], edges: [], ui: {} });
+    setMenu(null);
   }
 
   return (
     <header className="toolbar">
-      <strong className="brand">Unnest</strong>
+      <strong className="brand">
+        <span className="brand-mark">U</span>
+        Unnest
+      </strong>
       <input
         className="flow-name"
         value={flowName}
+        aria-label="flow 이름"
         onChange={(e) => setFlowName(e.target.value)}
       />
-      <span className="muted">{flowId ?? "(저장 안 됨)"}</span>
+      <span
+        className="save-state"
+        title={
+          flowId
+            ? `서버에 등록된 flow (${flowId}) — 편집한 내용은 저장을 눌러야 반영됩니다`
+            : "아직 서버에 저장되지 않은 flow입니다"
+        }
+      >
+        <span className={`save-dot ${flowId ? "" : "save-dot-dirty"}`} />
+        {flowId ?? "저장 전"}
+      </span>
+
       <div className="toolbar-actions">
-        <button onClick={newFlow}>새 flow</button>
+        {/* 2차 동작 — 파일 계열은 메뉴로 접는다 */}
+        <div className="dropdown">
+          <button className="btn-ghost" onClick={() => setMenu(menu ? null : "file")}>
+            파일
+            <Icon name="chevron-down" size={12} />
+          </button>
+          {menu && (
+            <>
+              <div className="dropdown-scrim" onClick={() => setMenu(null)} />
+              <div className="dropdown-list" role="menu">
+                {menu === "file" ? (
+                  <>
+                    <button className="dropdown-item" onClick={newFlow}>
+                      <Icon name="file-plus" /> 새 flow
+                    </button>
+                    <button className="dropdown-item" onClick={openFlowList}>
+                      <Icon name="folder-open" /> 열기...
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        exportFlow();
+                        setMenu(null);
+                      }}
+                    >
+                      <Icon name="download" /> Export (flow JSON 다운로드)
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setMenu(null);
+                        importRef.current?.click();
+                      }}
+                    >
+                      <Icon name="upload" /> Import (flow JSON 불러오기)
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="dropdown-head">
+                      <Icon name="folder-open" size={12} /> 저장된 flow
+                    </div>
+                    {flowList.length === 0 ? (
+                      <div className="dropdown-empty">저장된 flow가 없습니다.</div>
+                    ) : (
+                      flowList.map((f) => (
+                        <button
+                          key={f.id}
+                          className="dropdown-item"
+                          onClick={() => openFlow(f.id)}
+                        >
+                          {f.name}
+                          <span className="dropdown-item-sub">{f.id}</span>
+                        </button>
+                      ))
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+        <button onClick={save}>
+          <Icon name="save" /> 저장
+        </button>
+
+        <span className="toolbar-sep" />
+
         <button
+          className="btn-ghost"
           onClick={() => setShowCompUpload(true)}
           title="컴포넌트 .py 업로드 — 검증 통과 시 사이드바에 즉시 등록"
         >
-          ➕ 컴포넌트
+          <Icon name="plus" /> 컴포넌트
         </button>
-        <div className="dropdown">
-          <button onClick={openFlowList}>열기</button>
-          {flowList.length > 0 && (
-            <div className="dropdown-list">
-              {flowList.map((f) => (
-                <div key={f.id} className="dropdown-item" onClick={() => openFlow(f.id)}>
-                  {f.name} <span className="muted">{f.id}</span>
-                </div>
-              ))}
-              <div className="dropdown-item" onClick={() => setFlowList([])}>
-                닫기
-              </div>
-            </div>
-          )}
-        </div>
-        <button onClick={save}>저장</button>
-        <button onClick={exportFlow}>Export</button>
-        <button onClick={() => importRef.current?.click()}>Import</button>
+        <button
+          className="btn-ghost btn-icon"
+          onClick={cycleTheme}
+          aria-label={`테마: ${THEME_LABEL[themeMode]}`}
+          title={`테마: ${THEME_LABEL[themeMode]} (클릭해 전환)`}
+        >
+          <Icon name={THEME_ICON[themeMode]} size={15} />
+        </button>
+
+        <span className="toolbar-sep" />
+
         <button onClick={makeBundle} disabled={bundling} title="폐쇄망 이식용 도커 번들 제조">
-          {bundling ? "번들 제조 중..." : "📦 번들"}
+          <Icon name="package" />
+          {bundling ? "번들 제조 중..." : "번들"}
         </button>
-        <button className="run-btn" onClick={run} disabled={running}>
-          {running ? "실행 중..." : "▶ 실행"}
+        <button className="btn-primary" onClick={run} disabled={running}>
+          <Icon name="play" />
+          {running ? "실행 중..." : "실행"}
         </button>
       </div>
+
       <input
         ref={importRef}
         type="file"

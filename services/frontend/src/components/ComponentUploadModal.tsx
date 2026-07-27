@@ -130,7 +130,7 @@ export function ComponentUploadModal({ onClose }: { onClose: () => void }) {
         <div className="modal-actions">
           <button onClick={onClose}>닫기</button>
           <button
-            className="run-btn"
+            className="btn-primary"
             disabled={busy}
             onClick={() => fileRef.current?.click()}
           >

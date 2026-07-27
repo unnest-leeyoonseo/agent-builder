@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { useStore } from "../store";
 import type { ParamSpec } from "../types";
+import { Icon } from "./Icon";
 
 function ParamField({
   nodeId,
@@ -116,6 +117,7 @@ export function ParamPanel() {
   return (
     <div className="param-panel">
       <h3>
+        <Icon name={spec.icon} size={15} />
         {spec.display_name} <span className="muted">({node.id})</span>
       </h3>
       <p className="muted">{spec.description}</p>
